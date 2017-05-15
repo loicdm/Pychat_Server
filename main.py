@@ -12,7 +12,6 @@ class ClientThread(threading.Thread):
         self.port = port
         self.clientsocket = clientsocket
 
-
     def run(self):
         print("Connection de %s %s" % (self.ip, self.port,))
         r = self.clientsocket.recv(1024)
@@ -47,11 +46,6 @@ class ClientThread(threading.Thread):
             get_chan_name(msg_recu, self)
         if command == "del_channel":
             del_channel(msg_recu, self)
-
-
-
-
-
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcpsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

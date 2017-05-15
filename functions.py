@@ -3,10 +3,12 @@
 import configparser
 import os.path
 import pickle
-import socket
-import threading
-import mysql.connector
 from time import *
+import threading
+import socket
+import socketserver
+import mysql.connector
+
 
 def login(userinput, self):
     login = str(userinput[1])
@@ -33,7 +35,7 @@ def sendmsg(userinput, self):
     time = strftime('%Y-%m-%d %H:%M:%S')
     try:
 
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         is_password_valid = check_password_channel(id, password)
         if is_password_valid is True:
@@ -61,9 +63,7 @@ def loadidslist(userinput, self):
         tablename = "channel_" + channel
         is_password_valid = check_password_channel(channel, password)
         if is_password_valid is True :
-            import mysql.connector
-            import time
-            cnx = connect_db_channels
+            cnx = connect_db(0)
             cursor = cnx.cursor()
             query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
             cursor.execute(query)
@@ -86,8 +86,7 @@ def get_msg(userinput, self):
     try:
         is_password_valid = check_password_channel(channel, password)
         if is_password_valid is True:
-            import mysql.connector
-            cnx = connect_db_channels
+            cnx = connect_db(0)
             cursor = cnx.cursor()
             query = "SELECT username FROM " + tablename + " WHERE id ='" + id + "'"
             cursor.execute(query)
@@ -122,8 +121,7 @@ def register(userinput, self):
     is_email_used = check_email(email)
     if is_email_used == False and is_login_used == False:
         try:
-            import mysql.connector
-            cnx = connect_db_users
+            cnx = connect_db(1)
             cursor = cnx.cursor()
             query = "INSERT INTO users (password, username, first_name, last_name, email) VALUES(" + "'" + password + "'" + ", " + "'" + username + "'" + ", " + "'" + first_name + "'" + ", " + "'" + last_name + "'" + ", " + "'" + email + "'" +")"
             cursor.execute(query)
@@ -140,7 +138,7 @@ def register(userinput, self):
         self.clientsocket.send(pickle.dumps(msg))
 
 def check_login(login):
-    cnx = connect_db_users
+    cnx = connect_db(1)
     cursor = cnx.cursor()
     query = "SELECT username FROM users WHERE username ='" + login + "'"
     cursor.execute(query)
@@ -153,7 +151,7 @@ def check_login(login):
         return False
 
 def check_email(email):
-    cnx = connect_db_users
+    cnx = connect_db(1)
     cursor = cnx.cursor()
     query = "SELECT username FROM users WHERE email ='" + email + "'"
     cursor.execute(query)
@@ -167,7 +165,7 @@ def check_email(email):
 
 def check_channel(tablename):
     try:
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         query = "SHOW TABLES LIKE '" + tablename +"'"
         cursor.execute(query)
@@ -183,7 +181,7 @@ def check_channel(tablename):
 
 def get_channel_id(tablename):
     try:
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         query = "SELECT id FROM channels_infos WHERE channel_name = '" + tablename +"'"
         cursor.execute(query)
@@ -200,7 +198,7 @@ def get_channel_id(tablename):
 def get_chan_name(userinput, self):
     id = str(userinput[1])
     try:
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         query = "SELECT channel_name FROM channels_infos WHERE id = '" + id +"'"
         cursor.execute(query)
@@ -224,7 +222,7 @@ def new_channel(userinput, self):
     name = userinput[2]
     password = userinput[3]
     try:
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         SQL = ("""INSERT INTO channels_db.channels_infos (password, channel_name, owner) VALUES ('""" + password + """', '""" + name + """', '""" + user + """');""")
         cursor.execute(SQL)
@@ -256,6 +254,25 @@ def new_channel(userinput, self):
         print(err)
         self.clientsocket.send(pickle.dumps(False))
 
+
+def connect_db(mode):
+    if mode == 0:
+        cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
+                                      port=int(readcfg(['DATABASE', 'port'])),
+                                      user=readcfg(['DATABASE', 'user']),
+                                      password=readcfg(['DATABASE', 'password']),
+                                      database=readcfg(['DATABASE', 'database_channels']))
+        return cnx
+    if mode == 1:
+        cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
+                                      port=int(readcfg(['DATABASE', 'port'])),
+                                      user=readcfg(['DATABASE', 'user']),
+                                      password=readcfg(['DATABASE', 'password']),
+                                      database=readcfg(['DATABASE', 'database_users']))
+        return cnx
+    else:
+        print("invalid mode")
+
 def del_channel(userinput, self):
     username = userinput[1]
     userpassword = userinput[2]
@@ -264,7 +281,7 @@ def del_channel(userinput, self):
     tablename = "channel_" + str(channel)
     if check_login(username) is True and check_password_user(username, userpassword) is True and check_password_channel(channel, password) is True and check_chan_owner(channel, username) is True:
         try:
-            cnx = connect_db_channels
+            cnx = connect_db(0)
             cursor = cnx.cursor()
             SQL = ("""DELETE FROM channels_db.channels_infos WHERE channels_infos.id = '""" + str(channel) + """';
             DROP TABLE IF EXISTS """ + str(tablename) + """;""")
@@ -282,7 +299,7 @@ def del_channel(userinput, self):
 
 def check_chan_owner(id, username):
     try:
-        cnx = connect_db_channels
+        cnx = connect_db(0)
         cursor = cnx.cursor()
         query = "SELECT owner FROM channels_infos WHERE id = '" + str(id) +"'"
         cursor.execute(query)
@@ -304,7 +321,8 @@ def check_chan_owner(id, username):
         return False
 
 def check_password_user(login,password):
-    cnx = connect_db_users
+    cnx = connect_db(1)
+    print(cnx)
     cursor = cnx.cursor()
     query = "SELECT password FROM users WHERE username ='" + login + "'"
     cursor.execute(query)
@@ -318,8 +336,7 @@ def check_password_user(login,password):
     else:
         return False
 def check_password_channel(channel,password):
-    import mysql.connector
-    cnx = connect_db_channels
+    cnx = connect_db(0)
     cursor = cnx.cursor()
     query = "SELECT password FROM channels_infos WHERE id ='" + str(channel) + "'"
     cursor.execute(query)
@@ -431,44 +448,37 @@ MODIFY id int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;"""
         cursor.close()
         cnx.close()
 
-    except:
+    except mysql.connector.Error as err:
+        print(err)
+        return False
         pass
-        try:
-            cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
-                                          port=int(readcfg(['DATABASE', 'port'])),
-                                          user=readcfg(['DATABASE', 'user']),
-                                          password=readcfg(['DATABASE', 'password']))
-            database_channels = readcfg(['DATABASE', 'database_channels'])
-            cursor = cnx.cursor()
-            SQL = """CREATE DATABASE IF NOT EXISTS '"""+ database_channels +"""' DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+    try:
+        cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
+                                      port=int(readcfg(['DATABASE', 'port'])),
+                                      user=readcfg(['DATABASE', 'user']),
+                                      password=readcfg(['DATABASE', 'password']))
+        database_channels = readcfg(['DATABASE', 'database_channels'])
+        cursor = cnx.cursor()
+        SQL = """CREATE DATABASE IF NOT EXISTS """ + database_channels + """ DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 USE """+ database_channels +""";
 CREATE TABLE IF NOT EXISTS channels_infos (
 id int(11) NOT NULL,
-  password text COLLATE utf8_unicode_ci NOT NULL,
-  channel_name text COLLATE utf8_unicode_ci NOT NULL,
-  owner text COLLATE utf8_unicode_ci NOT NULL
+password text COLLATE utf8_unicode_ci NOT NULL,
+channel_name text COLLATE utf8_unicode_ci NOT NULL,
+owner text COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 ALTER TABLE channels_infos
- ADD PRIMARY KEY (id);
+ADD PRIMARY KEY (id);
 ALTER TABLE channels_infos
-MODIFY id int(11) NOT NULL AUTO_INCREMENT;"""
-            for query in cursor.execute(SQL, multi=True):
-                pass
-            cnx.commit()
-            cursor.close()
-            cnx.close()
-
-        except:
+MODIFY id int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;"""
+        for query in cursor.execute(SQL, multi=True):
             pass
+        cnx.commit()
+        cursor.close()
+        cnx.close()
 
-connect_db_channels = (mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
-                                  port=int(readcfg(['DATABASE', 'port'])),
-                                  user=readcfg(['DATABASE', 'user']),
-                                  password=readcfg(['DATABASE', 'password']),
-                                  database=readcfg(['DATABASE', 'database_channels'])))
 
-connect_db_users = (mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
-                                  port=int(readcfg(['DATABASE', 'port'])),
-                                  user=readcfg(['DATABASE', 'user']),
-                                  password=readcfg(['DATABASE', 'password']),
-                                  database=readcfg(['DATABASE', 'database_users'])))
+    except mysql.connector.Error as err:
+        print(err)
+        return False
+        pass
