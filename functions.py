@@ -9,20 +9,13 @@ import socket
 import socketserver
 import mysql.connector
 
-
 def login(userinput, self):
     login = str(userinput[1])
     password = str(userinput[2])
-    is_login_valid = check_login(login)
-    if is_login_valid == True:
-        is_password_valid = check_password_user(login, password)
-        if is_password_valid == True:
-                msg = "logs ok"
-                self.clientsocket.send(pickle.dumps(msg))
-        else:
-            self.clientsocket.send(pickle.dumps("invalid username or password"))
+    if check_login(login, self) is True and check_password_user(login, password, self) is True:
+        self.clientsocket.send(pickle.dumps(True))
     else:
-        self.clientsocket.send(pickle.dumps("invalid username or password"))
+        self.clientsocket.send(pickle.dumps(False))
 
 
 def sendmsg(userinput, self):
@@ -31,52 +24,47 @@ def sendmsg(userinput, self):
     tablename = "channel_" + id
     password = str(userinput[3])
     msg = str(userinput[4])
-
     time = strftime('%Y-%m-%d %H:%M:%S')
     try:
-
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        is_password_valid = check_password_channel(id, password)
+        is_password_valid = check_password_channel(id, password, self)
         if is_password_valid is True:
             query = "INSERT INTO " + tablename + "(username, msg, time) VALUES(" + "'" + username + "'" + ", " + "'" + msg + "'" + ", " + "'" + time + "'" + ")"
             cursor.execute(query)
             cnx.commit()
             cursor.close()
             cnx.close()
+            self.clientsocket.send(pickle.dumps(True))
         else:
             cursor.close()
             cnx.close()
-
-
-
-
-    except:
-        msg = "err3"
-        self.clientsocket.send(pickle.dumps(msg))
-
-
-def loadidslist(userinput, self):
-    try:
-        channel = str(userinput[1])
-        password = str(userinput[2])
-        tablename = "channel_" + channel
-        is_password_valid = check_password_channel(channel, password)
-        if is_password_valid is True :
-            cnx = connect_db(0)
-            cursor = cnx.cursor()
-            query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
-            cursor.execute(query)
-            data = cursor.fetchall()
-            cnx.commit()
-            cursor.close()
-            if data != "":
-                self.clientsocket.send(pickle.dumps(data))
-            else:
-                self.clientsocket.send(pickle.dumps("nomessages"))
     except mysql.connector.Error as err:
         print(err)
         self.clientsocket.send(pickle.dumps("err3"))
+
+
+def loadidslist(userinput, self):
+        channel = str(userinput[1])
+        password = str(userinput[2])
+        tablename = "channel_" + channel
+        is_password_valid = check_password_channel(channel, password, self)
+        if is_password_valid is True :
+            try:
+                cnx = connect_db(0)
+                cursor = cnx.cursor()
+                query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
+                cursor.execute(query)
+                data = cursor.fetchall()
+                cnx.commit()
+                cursor.close()
+                if data != "":
+                    self.clientsocket.send(pickle.dumps(data))
+                else:
+                    self.clientsocket.send(pickle.dumps("nomessages"))
+            except mysql.connector.Error as err:
+                print(err)
+                self.clientsocket.send(pickle.dumps("err3"))
 
 def get_msg(userinput, self):
     id = str(userinput[1])
@@ -84,7 +72,7 @@ def get_msg(userinput, self):
     tablename = "channel_" + channel
     password = str(userinput[3])
     try:
-        is_password_valid = check_password_channel(channel, password)
+        is_password_valid = check_password_channel(channel, password, self)
         if is_password_valid is True:
             cnx = connect_db(0)
             cursor = cnx.cursor()
@@ -116,10 +104,10 @@ def register(userinput, self):
     password = str(userinput[2])
     first_name = str(userinput[3])
     last_name = str(userinput[4])
-    email = (str(userinput[5]))[:-1]
-    is_login_used = check_login(username)
-    is_email_used = check_email(email)
-    if is_email_used == False and is_login_used == False:
+    email = str(userinput[5])
+    is_login_used = check_login(username, self)
+    is_email_used = check_email(email, self)
+    if is_email_used is False and is_login_used is False:
         try:
             cnx = connect_db(1)
             cursor = cnx.cursor()
@@ -128,42 +116,45 @@ def register(userinput, self):
             cnx.commit()
             cursor.close()
             cnx.close()
-            msg = "reg ok"
-            self.clientsocket.send(pickle.dumps(msg))
+            self.clientsocket.send(pickle.dumps(True))
         except:
-            msg = "err3"
-            self.clientsocket.send(pickle.dumps(msg))
-    else:
-        msg = "err4"
-        self.clientsocket.send(pickle.dumps(msg))
+            self.clientsocket.send(pickle.dumps("err3"))
+    elif is_email_used is True or is_login_used is True:
+        self.clientsocket.send(pickle.dumps(False))
 
-def check_login(login):
-    cnx = connect_db(1)
-    cursor = cnx.cursor()
-    query = "SELECT username FROM users WHERE username ='" + login + "'"
-    cursor.execute(query)
-    data = cursor.fetchall()
-    if data != []:
-        cursor.close()
-        cnx.close()
-        return True
-    else:
-        return False
+def check_login(login, self):
+    try:
+        cnx = connect_db(1)
+        cursor = cnx.cursor()
+        query = "SELECT username FROM users WHERE username ='" + login + "'"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        if data != []:
+            cursor.close()
+            cnx.close()
+            return True
+        else:
+            return False
+    except:
+        self.clientsocket.send(pickle.dumps("err3"))
 
-def check_email(email):
-    cnx = connect_db(1)
-    cursor = cnx.cursor()
-    query = "SELECT username FROM users WHERE email ='" + email + "'"
-    cursor.execute(query)
-    data = cursor.fetchall()
-    if data != []:
-        cursor.close()
-        cnx.close()
-        return True
-    else:
-        return False
+def check_email(email, self):
+    try:
+        cnx = connect_db(1)
+        cursor = cnx.cursor()
+        query = "SELECT username FROM users WHERE email ='" + email + "'"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        if data != []:
+            cursor.close()
+            cnx.close()
+            return True
+        else:
+            return False
+    except:
+        self.clientsocket.send(pickle.dumps("err3"))
 
-def check_channel(tablename):
+def check_channel(tablename, self):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
@@ -173,11 +164,11 @@ def check_channel(tablename):
         cursor.close()
         cnx.close()
         if data != []:
-                return True
+            self.clientsocket.send(pickle.dumps(True))
         else:
-            return False
+            self.clientsocket.send(pickle.dumps(False))
     except:
-        return "err"
+        self.clientsocket.send(pickle.dumps("err3"))
 
 def get_channel_id(tablename):
     try:
@@ -207,15 +198,13 @@ def get_chan_name(userinput, self):
         cnx.close()
         if data != []:
             msg = str(data[0])
-            print(msg)
             msg = msg[2:-3]
-            print(msg)
             self.clientsocket.send(pickle.dumps(msg))
         else:
-            self.clientsocket.send(pickle.dumps("err"))
+            self.clientsocket.send(pickle.dumps("err5"))
     except mysql.connector.Error as err:
         print(err)
-        self.clientsocket.send(pickle.dumps(err))
+        self.clientsocket.send(pickle.dumps("err3"))
 
 def new_channel(userinput, self):
     user = userinput[1]
@@ -252,7 +241,7 @@ def new_channel(userinput, self):
         self.clientsocket.send(pickle.dumps(returnlist))
     except mysql.connector.Error as err:
         print(err)
-        self.clientsocket.send(pickle.dumps(False))
+        self.clientsocket.send(pickle.dumps("err 3"))
 
 
 def connect_db(mode):
@@ -279,7 +268,7 @@ def del_channel(userinput, self):
     channel = userinput[3]
     password = userinput[4]
     tablename = "channel_" + str(channel)
-    if check_login(username) is True and check_password_user(username, userpassword) is True and check_password_channel(channel, password) is True and check_chan_owner(channel, username) is True:
+    if check_login(username, self) is True and check_password_user(username, userpassword, self) is True and check_password_channel(channel, password, self) is True and check_chan_owner(channel, username) is True:
         try:
             cnx = connect_db(0)
             cursor = cnx.cursor()
@@ -293,7 +282,7 @@ def del_channel(userinput, self):
             self.clientsocket.send(pickle.dumps(True))
         except mysql.connector.Error as err:
             print(err)
-            self.clientsocket.send(pickle.dumps(False))
+            self.clientsocket.send(pickle.dumps("err3"))
     else:
         self.clientsocket.send(pickle.dumps(False))
 
@@ -320,35 +309,41 @@ def check_chan_owner(id, username):
         print(err)
         return False
 
-def check_password_user(login,password):
-    cnx = connect_db(1)
-    print(cnx)
-    cursor = cnx.cursor()
-    query = "SELECT password FROM users WHERE username ='" + login + "'"
-    cursor.execute(query)
-    data = cursor.fetchall()
-    data = str(data)
-    data = data[3:-4]
-    if data == password:
-        cursor.close()
-        cnx.close()
-        return True
-    else:
-        return False
-def check_password_channel(channel,password):
-    cnx = connect_db(0)
-    cursor = cnx.cursor()
-    query = "SELECT password FROM channels_infos WHERE id ='" + str(channel) + "'"
-    cursor.execute(query)
-    data = cursor.fetchall()
-    data = str(data)
-    data = data[3:-4]
-    if data == password:
-        cursor.close()
-        cnx.close()
-        return True
-    else:
-        return False
+def check_password_user(login,password, self):
+    try:
+        cnx = connect_db(1)
+        cursor = cnx.cursor()
+        query = "SELECT password FROM users WHERE username ='" + login + "'"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        data = str(data)
+        data = data[3:-4]
+        if data == password:
+            cursor.close()
+            cnx.close()
+            return True
+        else:
+            return False
+    except:
+        self.clientsocket.send(pickle.dumps("err3"))
+
+def check_password_channel(channel,password, self):
+    try:
+        cnx = connect_db(0)
+        cursor = cnx.cursor()
+        query = "SELECT password FROM channels_infos WHERE id ='" + str(channel) + "'"
+        cursor.execute(query)
+        data = cursor.fetchall()
+        data = str(data)
+        data = data[3:-4]
+        if data == password:
+            cursor.close()
+            cnx.close()
+            return True
+        else:
+            return False
+    except:
+        self.clientsocket.send(pickle.dumps("err3"))
 
 def readcfg(list):
     config = configparser.ConfigParser()
@@ -447,11 +442,9 @@ MODIFY id int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;"""
         cnx.commit()
         cursor.close()
         cnx.close()
-
     except mysql.connector.Error as err:
         print(err)
         return False
-        pass
     try:
         cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
                                       port=int(readcfg(['DATABASE', 'port'])),
@@ -476,9 +469,6 @@ MODIFY id int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;"""
         cnx.commit()
         cursor.close()
         cnx.close()
-
-
     except mysql.connector.Error as err:
         print(err)
         return False
-        pass
