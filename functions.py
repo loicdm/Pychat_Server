@@ -430,8 +430,7 @@ id int(11) NOT NULL,
   password text COLLATE utf8_unicode_ci NOT NULL,
   email text COLLATE utf8_unicode_ci NOT NULL,
   first_name text COLLATE utf8_unicode_ci NOT NULL,
-  last_name text COLLATE utf8_unicode_ci NOT NULL,
-  sub_channels text CHARACTER SET utf8 COLLATE utf8_bin NOT NULL
+  last_name text COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 ALTER TABLE users
  ADD PRIMARY KEY (id);
