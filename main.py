@@ -5,6 +5,7 @@ from functions import *
 check_cfg()
 check_db()
 
+
 class ClientThread(threading.Thread):
     def __init__(self, ip, port, clientsocket):
         threading.Thread.__init__(self)
@@ -48,6 +49,7 @@ class ClientThread(threading.Thread):
             get_chan_name(received_message, self)
         if command == "del_channel":
             del_channel(received_message, self)
+
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 tcpsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

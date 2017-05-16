@@ -9,6 +9,7 @@ import socket
 import socketserver
 import mysql.connector
 
+
 def login(userinput, self):
     login = str(userinput[1])
     password = str(userinput[2])
@@ -30,7 +31,8 @@ def sendmsg(userinput, self):
         cursor = cnx.cursor()
         is_password_valid = check_password_channel(id, password, self)
         if is_password_valid is True:
-            query = "INSERT INTO " + tablename + "(username, msg, time) VALUES(" + "'" + username + "'" + ", " + "'" + msg + "'" + ", " + "'" + time + "'" + ")"
+            query = ("INSERT INTO " + tablename + "(username, msg, time) VALUES("
+                     + "'" + username + "'" + ", " + "'" + msg + "'" + ", " + "'" + time + "'" + ")")
             cursor.execute(query)
             cnx.commit()
             cursor.close()
@@ -45,26 +47,27 @@ def sendmsg(userinput, self):
 
 
 def loadidslist(userinput, self):
-        channel = str(userinput[1])
-        password = str(userinput[2])
-        tablename = "channel_" + channel
-        is_password_valid = check_password_channel(channel, password, self)
-        if is_password_valid is True :
-            try:
-                cnx = connect_db(0)
-                cursor = cnx.cursor()
-                query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
-                cursor.execute(query)
-                data = cursor.fetchall()
-                cnx.commit()
-                cursor.close()
-                if data != "":
-                    self.clientsocket.send(pickle.dumps(data))
-                else:
-                    self.clientsocket.send(pickle.dumps("nomessages"))
-            except mysql.connector.Error as err:
-                print(err)
-                self.clientsocket.send(pickle.dumps("err3"))
+    channel = str(userinput[1])
+    password = str(userinput[2])
+    tablename = "channel_" + channel
+    is_password_valid = check_password_channel(channel, password, self)
+    if is_password_valid is True:
+        try:
+            cnx = connect_db(0)
+            cursor = cnx.cursor()
+            query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
+            cursor.execute(query)
+            data = cursor.fetchall()
+            cnx.commit()
+            cursor.close()
+            if data != "":
+                self.clientsocket.send(pickle.dumps(data))
+            else:
+                self.clientsocket.send(pickle.dumps("nomessages"))
+        except mysql.connector.Error as err:
+            print(err)
+            self.clientsocket.send(pickle.dumps("err3"))
+
 
 def get_msg(userinput, self):
     id = str(userinput[1])
@@ -99,6 +102,7 @@ def get_msg(userinput, self):
         print(err)
         self.clientsocket.send(pickle.dumps("err3"))
 
+
 def register(userinput, self):
     username = str(userinput[1])
     password = str(userinput[2])
@@ -111,7 +115,7 @@ def register(userinput, self):
         try:
             cnx = connect_db(1)
             cursor = cnx.cursor()
-            query = "INSERT INTO users (password, username, first_name, last_name, email) VALUES(" + "'" + password + "'" + ", " + "'" + username + "'" + ", " + "'" + first_name + "'" + ", " + "'" + last_name + "'" + ", " + "'" + email + "'" +")"
+            query = "INSERT INTO users (password, username, first_name, last_name, email) VALUES(" + "'" + password + "'" + ", " + "'" + username + "'" + ", " + "'" + first_name + "'" + ", " + "'" + last_name + "'" + ", " + "'" + email + "'" + ")"
             cursor.execute(query)
             cnx.commit()
             cursor.close()
@@ -122,6 +126,7 @@ def register(userinput, self):
     elif is_email_used is True or is_login_used is True:
         self.clientsocket.send(pickle.dumps(False))
 
+
 def check_login(login, self):
     try:
         cnx = connect_db(1)
@@ -129,7 +134,7 @@ def check_login(login, self):
         query = "SELECT username FROM users WHERE username ='" + login + "'"
         cursor.execute(query)
         data = cursor.fetchall()
-        if data != []:
+        if data:
             cursor.close()
             cnx.close()
             return True
@@ -137,6 +142,7 @@ def check_login(login, self):
             return False
     except:
         self.clientsocket.send(pickle.dumps("err3"))
+
 
 def check_email(email, self):
     try:
@@ -145,7 +151,7 @@ def check_email(email, self):
         query = "SELECT username FROM users WHERE email ='" + email + "'"
         cursor.execute(query)
         data = cursor.fetchall()
-        if data != []:
+        if data:
             cursor.close()
             cnx.close()
             return True
@@ -154,49 +160,52 @@ def check_email(email, self):
     except:
         self.clientsocket.send(pickle.dumps("err3"))
 
+
 def check_channel(tablename, self):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        query = "SHOW TABLES LIKE '" + tablename +"'"
+        query = "SHOW TABLES LIKE '" + tablename + "'"
         cursor.execute(query)
         data = cursor.fetchall()
         cursor.close()
         cnx.close()
-        if data != []:
+        if data:
             self.clientsocket.send(pickle.dumps(True))
         else:
             self.clientsocket.send(pickle.dumps(False))
     except:
         self.clientsocket.send(pickle.dumps("err3"))
 
+
 def get_channel_id(tablename):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        query = "SELECT id FROM channels_infos WHERE channel_name = '" + tablename +"'"
+        query = "SELECT id FROM channels_infos WHERE channel_name = '" + tablename + "'"
         cursor.execute(query)
         data = cursor.fetchall()
         cursor.close()
         cnx.close()
-        if data != []:
+        if data:
             return True
         else:
             return False
     except:
         return "err"
 
+
 def get_chan_name(userinput, self):
     id = str(userinput[1])
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        query = "SELECT channel_name FROM channels_infos WHERE id = '" + id +"'"
+        query = "SELECT channel_name FROM channels_infos WHERE id = '" + id + "'"
         cursor.execute(query)
         data = cursor.fetchall()
         cursor.close()
         cnx.close()
-        if data != []:
+        if data:
             msg = str(data[0])
             msg = msg[2:-3]
             self.clientsocket.send(pickle.dumps(msg))
@@ -206,6 +215,7 @@ def get_chan_name(userinput, self):
         print(err)
         self.clientsocket.send(pickle.dumps("err3"))
 
+
 def new_channel(userinput, self):
     user = userinput[1]
     name = userinput[2]
@@ -213,7 +223,8 @@ def new_channel(userinput, self):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        SQL = ("""INSERT INTO channels_db.channels_infos (password, channel_name, owner) VALUES ('""" + password + """', '""" + name + """', '""" + user + """');""")
+        SQL = (
+            """INSERT INTO channels_db.channels_infos (password, channel_name, owner) VALUES ('""" + password + """', '""" + name + """', '""" + user + """');""")
         cursor.execute(SQL)
         cnx.commit()
         cursor.close()
@@ -262,13 +273,18 @@ def connect_db(mode):
     else:
         print("invalid mode")
 
+
 def del_channel(userinput, self):
     username = userinput[1]
     userpassword = userinput[2]
     channel = userinput[3]
     password = userinput[4]
     tablename = "channel_" + str(channel)
-    if check_login(username, self) is True and check_password_user(username, userpassword, self) is True and check_password_channel(channel, password, self) is True and check_chan_owner(channel, username) is True:
+    if check_login(username, self) is True and check_password_user(username, userpassword,
+                                                                   self) is True and check_password_channel(channel,
+                                                                                                            password,
+                                                                                                            self) is True and check_chan_owner(
+        channel, username) is True:
         try:
             cnx = connect_db(0)
             cursor = cnx.cursor()
@@ -286,16 +302,17 @@ def del_channel(userinput, self):
     else:
         self.clientsocket.send(pickle.dumps(False))
 
+
 def check_chan_owner(id, username):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
-        query = "SELECT owner FROM channels_infos WHERE id = '" + str(id) +"'"
+        query = "SELECT owner FROM channels_infos WHERE id = '" + str(id) + "'"
         cursor.execute(query)
         data = cursor.fetchall()
         cursor.close()
         cnx.close()
-        if data != []:
+        if data:
             msg = str(data[0])
             msg = msg[2:-3]
             print([msg], [username])
@@ -309,7 +326,8 @@ def check_chan_owner(id, username):
         print(err)
         return False
 
-def check_password_user(login,password, self):
+
+def check_password_user(login, password, self):
     try:
         cnx = connect_db(1)
         cursor = cnx.cursor()
@@ -327,7 +345,8 @@ def check_password_user(login,password, self):
     except:
         self.clientsocket.send(pickle.dumps("err3"))
 
-def check_password_channel(channel,password, self):
+
+def check_password_channel(channel, password, self):
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
@@ -345,12 +364,14 @@ def check_password_channel(channel,password, self):
     except:
         self.clientsocket.send(pickle.dumps("err3"))
 
+
 def readcfg(list):
     config = configparser.ConfigParser()
     config.read('server_config.ini')
     for item in list:
         config = config[item]
     return str(config)
+
 
 def check_cfg():
     if os.path.exists("server_config.ini") is False:
@@ -360,8 +381,8 @@ def check_cfg():
                             'port': '1111'}
         config['DATABASE'] = {'host': '',
                               'port': '',
-                              'user' : '',
-                              'password' : '',
+                              'user': '',
+                              'password': '',
                               'database_users': '',
                               'database_channels': ''}
         with open('server_config.ini', 'w') as configfile:
@@ -414,6 +435,7 @@ def check_cfg():
             with open('server_config.ini', 'w') as configfile:
                 config.write(configfile)
 
+
 def check_db():
     try:
         cnx = mysql.connector.connect(host=readcfg(['DATABASE', 'host']),
@@ -452,7 +474,7 @@ MODIFY id int(11) NOT NULL AUTO_INCREMENT,AUTO_INCREMENT=1;"""
         database_channels = readcfg(['DATABASE', 'database_channels'])
         cursor = cnx.cursor()
         SQL = """CREATE DATABASE IF NOT EXISTS """ + database_channels + """ DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
-USE """+ database_channels +""";
+USE """ + database_channels + """;
 CREATE TABLE IF NOT EXISTS channels_infos (
 id int(11) NOT NULL,
 password text COLLATE utf8_unicode_ci NOT NULL,
