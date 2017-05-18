@@ -49,6 +49,8 @@ class ClientThread(threading.Thread):
             get_chan_name(received_message, self)
         if command == "del_channel":
             del_channel(received_message, self)
+        if command == "clear_channel":
+            clear_channel(received_message, self)
 
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
