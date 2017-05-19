@@ -226,7 +226,8 @@ def new_channel(userinput, self):
         cnx = connect_db(0)
         cursor = cnx.cursor()
         SQL = (
-            """INSERT INTO """ + readcfg(['DATABASE', 'database_channels']) + """.channels_infos (password, channel_name, owner) VALUES ('""" + password + """', '""" + name + """', '""" + user + """');""")
+            """INSERT INTO """ + readcfg(['DATABASE',
+                                          'database_channels']) + """.channels_infos (password, channel_name, owner) VALUES ('""" + password + """', '""" + name + """', '""" + user + """');""")
         cursor.execute(SQL)
         cnx.commit()
         cursor.close()
@@ -290,7 +291,8 @@ def del_channel(userinput, self):
         try:
             cnx = connect_db(0)
             cursor = cnx.cursor()
-            SQL = ("""DELETE FROM """ + readcfg(['DATABASE', 'database_channels']) + """.channels_infos WHERE channels_infos.id = '""" + str(channel) + """';
+            SQL = ("""DELETE FROM """ + readcfg(
+                ['DATABASE', 'database_channels']) + """.channels_infos WHERE channels_infos.id = '""" + str(channel) + """';
             DROP TABLE IF EXISTS """ + str(tablename) + """;""")
             for query in cursor.execute(SQL, multi=True):
                 pass
@@ -303,6 +305,7 @@ def del_channel(userinput, self):
             self.clientsocket.send(pickle.dumps("err3"))
     else:
         self.clientsocket.send(pickle.dumps(False))
+
 
 def clear_channel(userinput, self):
     username = userinput[1]
@@ -331,6 +334,7 @@ def clear_channel(userinput, self):
             self.clientsocket.send(pickle.dumps("err3"))
     else:
         self.clientsocket.send(pickle.dumps(False))
+
 
 def check_chan_owner(id, username):
     try:

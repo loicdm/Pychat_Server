@@ -2,7 +2,7 @@
 # coding: utf-8
 from functions import *
 
-version = "1.0.1"
+version = "1.0.2"
 
 check_cfg()
 check_db()
@@ -55,7 +55,6 @@ class ClientThread(threading.Thread):
                 self.clientsocket.send(pickle.dumps(True))
             else:
                 self.clientsocket.send(pickle.dumps(False))
-
 
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
