@@ -2,6 +2,8 @@
 # coding: utf-8
 from functions import *
 
+version = "1.0.0"
+
 check_cfg()
 check_db()
 
@@ -39,10 +41,6 @@ class ClientThread(threading.Thread):
                 self.clientsocket.send(pickle.dumps(True))
             elif a is False or b is False:
                 self.clientsocket.send(pickle.dumps(False))
-        if command == "used_channel":
-            channel = received_message[1]
-            tablename = "channel_" + channel
-            check_channel(tablename, self)
         if command == "new_channel":
             new_channel(received_message, self)
         if command == "get_chan_name":
@@ -51,6 +49,13 @@ class ClientThread(threading.Thread):
             del_channel(received_message, self)
         if command == "clear_channel":
             clear_channel(received_message, self)
+        if command == "check_version":
+            clientversion = received_message[1]
+            if clientversion == version:
+                self.clientsocket.send(pickle.dumps(True))
+            else:
+                self.clientsocket.send(pickle.dumps(False))
+
 
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

@@ -95,7 +95,6 @@ def get_msg(userinput, self):
             time = str(time[0])
             time = time[19:-3]
             time = time.split(", ")
-            time = str(time[3] + ":" + time[4] + ":" + time[5])
             returnlist = [id, username, msg, time]
             self.clientsocket.send(pickle.dumps(returnlist))
     except mysql.connector.Error as err:
@@ -171,9 +170,9 @@ def check_channel(tablename, self):
         cursor.close()
         cnx.close()
         if data:
-            self.clientsocket.send(pickle.dumps(True))
+            return True
         else:
-            self.clientsocket.send(pickle.dumps(False))
+            return False
     except:
         self.clientsocket.send(pickle.dumps("err3"))
 
@@ -342,7 +341,6 @@ def check_chan_owner(id, username):
         if data:
             msg = str(data[0])
             msg = msg[2:-3]
-            print([msg], [username])
             if msg == username:
                 return True
             else:
