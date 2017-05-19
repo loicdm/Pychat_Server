@@ -26,24 +26,27 @@ def sendmsg(userinput, self):
     password = str(userinput[3])
     msg = str(userinput[4])
     time = strftime('%Y-%m-%d %H:%M:%S')
-    try:
-        cnx = connect_db(0)
-        cursor = cnx.cursor()
-        is_password_valid = check_password_channel(id, password, self)
-        if is_password_valid is True:
-            query = ("INSERT INTO " + tablename + "(username, msg, time) VALUES("
-                     + "'" + username + "'" + ", " + "'" + msg + "'" + ", " + "'" + time + "'" + ")")
-            cursor.execute(query)
-            cnx.commit()
-            cursor.close()
-            cnx.close()
-            self.clientsocket.send(pickle.dumps(True))
+    if len(msg) <= 140:
+        try:
+            cnx = connect_db(0)
+            cursor = cnx.cursor()
+            is_password_valid = check_password_channel(id, password, self)
+            if is_password_valid is True:
+                query = ("INSERT INTO " + tablename + "(username, msg, time) VALUES("
+                         + "'" + username + "'" + ", " + "'" + msg + "'" + ", " + "'" + time + "'" + ")")
+                cursor.execute(query)
+                cnx.commit()
+                cursor.close()
+                cnx.close()
+                self.clientsocket.send(pickle.dumps(True))
+            else:
+                cursor.close()
+                cnx.close()
+        except mysql.connector.Error as err:
+            print(err)
+            self.clientsocket.send(pickle.dumps("err3"))
         else:
-            cursor.close()
-            cnx.close()
-    except mysql.connector.Error as err:
-        print(err)
-        self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(False))
 
 
 def loadidslist(userinput, self):
