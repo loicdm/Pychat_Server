@@ -2,7 +2,7 @@
 # coding: utf-8
 from functions import *
 
-version = "1.0.3"
+version = "1.0.4"
 
 check_cfg()
 check_db()
@@ -55,6 +55,8 @@ class ClientThread(threading.Thread):
                 self.clientsocket.send(pickle.dumps(True))
             else:
                 self.clientsocket.send(pickle.dumps(False))
+        if command == "rename_chan":
+            rename_chan(received_message, self)
 
 
 tcpsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

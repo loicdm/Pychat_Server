@@ -197,6 +197,37 @@ def get_channel_id(tablename):
         return "err"
 
 
+def rename_chan(userinput, self):
+    username = userinput[1]
+    userpassword = userinput[2]
+    channel = userinput[3]
+    password = userinput[4]
+    new_channel_name = userinput[5]
+    tablename = "channel_" + str(channel)
+    if check_login(username, self) is True and check_password_user(username, userpassword,
+                                                                   self) is True and check_password_channel(channel,
+                                                                                                            password,
+                                                                                                            self) is True and check_chan_owner(
+        channel, username) is True:
+        try:
+            cnx = connect_db(0)
+            cursor = cnx.cursor()
+            SQL = ("""UPDATE """ + readcfg(
+                ['DATABASE', 'database_channels']) + """.channels_infos SET channel_name = '""" + str(
+                new_channel_name) + """' WHERE channels_infos.id = '""" + channel + """';""")
+            for query in cursor.execute(SQL, multi=True):
+                pass
+            cnx.commit()
+            cursor.close()
+            cnx.close()
+            self.clientsocket.send(pickle.dumps(True))
+        except mysql.connector.Error as err:
+            print(err)
+            self.clientsocket.send(pickle.dumps("err3"))
+    else:
+        self.clientsocket.send(pickle.dumps(False))
+
+
 def get_chan_name(userinput, self):
     id = str(userinput[1])
     try:
