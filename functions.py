@@ -242,7 +242,6 @@ def get_chan_name(userinput):
         if data:
             msg = str(data[0])
             msg = msg[2:-3]
-            print(msg)
             return msg
         else:
             return ["err6"]
