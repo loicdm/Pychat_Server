@@ -2,7 +2,7 @@
 # coding: utf-8
 from functions import *
 
-version = "1.0.5"
+version = "1.0.7"
 
 check_cfg()
 check_db()
@@ -44,7 +44,10 @@ class ClientThread(threading.Thread):
         if command == "new_channel":
             new_channel(received_message, self)
         if command == "get_chan_name":
-            get_chan_name(received_message, self)
+            id = str(received_message[1])
+            chan_name = get_chan_name(id)
+            self.clientsocket.send(pickle.dumps(chan_name))
+
         if command == "del_channel":
             del_channel(received_message, self)
         if command == "clear_channel":

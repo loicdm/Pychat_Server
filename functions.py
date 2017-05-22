@@ -44,7 +44,7 @@ def sendmsg(userinput, self):
                 cnx.close()
         except mysql.connector.Error as err:
             print(err)
-            self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(["err3"]))
         else:
             self.clientsocket.send(pickle.dumps(False))
 
@@ -54,22 +54,23 @@ def loadidslist(userinput, self):
     password = str(userinput[2])
     tablename = "channel_" + channel
     is_password_valid = check_password_channel(channel, password, self)
-    if is_password_valid is True:
-        try:
-            cnx = connect_db(0)
-            cursor = cnx.cursor()
-            query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
-            cursor.execute(query)
-            data = cursor.fetchall()
-            cnx.commit()
-            cursor.close()
-            if data != "":
-                self.clientsocket.send(pickle.dumps(data))
-            else:
-                self.clientsocket.send(pickle.dumps("nomessages"))
-        except mysql.connector.Error as err:
-            print(err)
-            self.clientsocket.send(pickle.dumps("err3"))
+    chan_name = get_chan_name(channel)
+    if chan_name != ["err6"]:
+        if is_password_valid is True:
+            try:
+                cnx = connect_db(0)
+                cursor = cnx.cursor()
+                query = "SELECT id FROM " + tablename + " ORDER BY id ASC"
+                cursor.execute(query)
+                data = cursor.fetchall()
+                cnx.commit()
+                cursor.close()
+                self.clientsocket.send(pickle.dumps([data, chan_name]))
+            except mysql.connector.Error as err:
+                print(err)
+                self.clientsocket.send(pickle.dumps(["err3"]))
+    else:
+        self.clientsocket.send(pickle.dumps(["err6"]))
 
 
 def get_msg(userinput, self):
@@ -102,7 +103,7 @@ def get_msg(userinput, self):
             self.clientsocket.send(pickle.dumps(returnlist))
     except mysql.connector.Error as err:
         print(err)
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def register(userinput, self):
@@ -124,7 +125,7 @@ def register(userinput, self):
             cnx.close()
             self.clientsocket.send(pickle.dumps(True))
         except:
-            self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(["err3"]))
     elif is_email_used is True or is_login_used is True:
         self.clientsocket.send(pickle.dumps(False))
 
@@ -143,7 +144,7 @@ def check_login(login, self):
         else:
             return False
     except:
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def check_email(email, self):
@@ -160,7 +161,7 @@ def check_email(email, self):
         else:
             return False
     except:
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def check_channel(tablename, self):
@@ -177,7 +178,7 @@ def check_channel(tablename, self):
         else:
             return False
     except:
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def get_channel_id(tablename):
@@ -223,13 +224,13 @@ def rename_chan(userinput, self):
             self.clientsocket.send(pickle.dumps(True))
         except mysql.connector.Error as err:
             print(err)
-            self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(["err3"]))
     else:
         self.clientsocket.send(pickle.dumps(False))
 
 
-def get_chan_name(userinput, self):
-    id = str(userinput[1])
+def get_chan_name(userinput):
+    id = str(userinput)
     try:
         cnx = connect_db(0)
         cursor = cnx.cursor()
@@ -241,12 +242,13 @@ def get_chan_name(userinput, self):
         if data:
             msg = str(data[0])
             msg = msg[2:-3]
-            self.clientsocket.send(pickle.dumps(msg))
+            print(msg)
+            return msg
         else:
-            self.clientsocket.send(pickle.dumps("err5"))
+            return ["err6"]
     except mysql.connector.Error as err:
         print(err)
-        self.clientsocket.send(pickle.dumps("err3"))
+        return ["err3"]
 
 
 def new_channel(userinput, self):
@@ -286,7 +288,7 @@ def new_channel(userinput, self):
         self.clientsocket.send(pickle.dumps(returnlist))
     except mysql.connector.Error as err:
         print(err)
-        self.clientsocket.send(pickle.dumps("err 3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def connect_db(mode):
@@ -333,7 +335,7 @@ def del_channel(userinput, self):
             self.clientsocket.send(pickle.dumps(True))
         except mysql.connector.Error as err:
             print(err)
-            self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(["err3"]))
     else:
         self.clientsocket.send(pickle.dumps(False))
 
@@ -362,7 +364,7 @@ def clear_channel(userinput, self):
             self.clientsocket.send(pickle.dumps(True))
         except mysql.connector.Error as err:
             print(err)
-            self.clientsocket.send(pickle.dumps("err3"))
+            self.clientsocket.send(pickle.dumps(["err3"]))
     else:
         self.clientsocket.send(pickle.dumps(False))
 
@@ -406,7 +408,7 @@ def check_password_user(login, password, self):
         else:
             return False
     except:
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def check_password_channel(channel, password, self):
@@ -425,7 +427,7 @@ def check_password_channel(channel, password, self):
         else:
             return False
     except:
-        self.clientsocket.send(pickle.dumps("err3"))
+        self.clientsocket.send(pickle.dumps(["err3"]))
 
 
 def readcfg(list):
