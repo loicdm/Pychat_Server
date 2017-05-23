@@ -2,7 +2,7 @@
 # coding: utf-8
 from functions import *
 
-version = "1.0.8"
+version = "1.0.9"
 
 check_cfg()
 check_db()

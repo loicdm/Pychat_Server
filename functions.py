@@ -199,11 +199,11 @@ def get_channel_id(tablename):
 
 
 def rename_chan(userinput, self):
-    username = userinput[1]
-    userpassword = userinput[2]
-    channel = userinput[3]
-    password = userinput[4]
-    new_channel_name = userinput[5]
+    username = str(userinput[1])
+    userpassword = str(userinput[2])
+    channel = str(userinput[3])
+    password = str(userinput[4])
+    new_channel_name = str(userinput[5])
     tablename = "channel_" + str(channel)
     if check_login(username, self) is True and check_password_user(username, userpassword,
                                                                    self) is True and check_password_channel(channel,
